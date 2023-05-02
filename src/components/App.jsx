@@ -1,73 +1,68 @@
-import { Component } from "react";
-
 import css from "./App.module.css"
 import fetchFotoWithQuery from "services/api";
 
 import { Searchbar } from "./Searchbar/Searchbar";
 import { ImageGallery } from "./ImageGallery/ImageGallery";
 import { Button } from "./Button/Button";
+
 import Notiflix from "notiflix";
 
+import { useEffect, useState } from "react";
 
-export class App extends Component {
-  state = {
-    value: '',
-    foto: [],
-    totalFoto: 0,
-    page: 1,
+const App = () => {
+  const [value, setValue] = useState('');
+  const [foto, setFoto] = useState([]);
+  const [totalFoto, setTotalFoto] = useState(0);
+  const [page, setPage] = useState(1);
+  const [isVizibleLoadMore, setIsVizibleLoadMore] = useState(false);
 
-    isLoading: false,
-    isVizibleLoadMore: false,
-  };
+  useEffect(() => {
+    if (!value) {
+      return
+    }
 
-  async componentDidUpdate(_, prevState) {
-
-    if (prevState.value !== this.state.value || prevState.page !== this.state.page) {
-
-      this.setState({ isLoading: true });
-
+    async function fotoData() {
       try {
-        const foto = await fetchFotoWithQuery(this.state);
-        prevState.value !== this.state.value && Notiflix.Notify.success(`There are ${foto.total} photos.`);
-        this.setState({ foto: [...this.state.foto, ...foto.hits], totalFoto: foto.totalHits });
+        const fotoData = await fetchFotoWithQuery({ value, page })
+        setFoto(pref => [...pref, ...fotoData.hits]);
+        setTotalFoto(fotoData.totalHits);
       } catch (error) {
         Notiflix.Notify.warning(error.message);
       } finally {
-        this.setState({
-          isLoading: false,
-          isVizibleLoadMore: false,
-        });
+        setIsVizibleLoadMore(false);
       }
-    }
+    };
 
+    fotoData();
 
-    if (prevState.foto.length !== this.state.foto.length) {
-      window.scroll({
-        top: document.documentElement.offsetHeight,
-        behavior: "smooth",
-      });
-    }
+  }, [value, page])
 
-  }
-
-  onSearch = value => {
-    this.setState({ value: value, foto: [], page: 1 });
-  }
-
-  onClickLoadMore = () => {
-    this.setState({
-      page: this.state.page + 1,
-      isVizibleLoadMore: true,
+  useEffect(() => {
+    window.scroll({
+      top: document.documentElement.offsetHeight,
+      behavior: "smooth",
     });
+  }, [foto])
+
+  const onSearch = value => {
+    setValue(value);
+    setFoto([]);
+    setPage(1);
   }
 
-  render() {
-    return (
-      <div className={css.App} >
-        <Searchbar onSearch={this.onSearch} />
-        <ImageGallery data={this.state.foto} handleSwitchModal={this.handleOpenModal} handleSelectedFoto={this.handleSelectedFoto} />
-        {this.state.page * 12 < this.state.totalFoto && <Button onClickLoadMore={this.onClickLoadMore} isVizibleLoadMore={this.state.isVizibleLoadMore} />}
-      </div>
-    );
+  const onClickLoadMore = () => {
+    setPage(pref => pref + 1);
+    setIsVizibleLoadMore(true);
   }
-};
+
+  return (
+    <div className={css.App} >
+      <Searchbar onSearch={onSearch} />
+      <ImageGallery data={foto} />
+      {page * 12 < totalFoto && <Button onClickLoadMore={onClickLoadMore} isVizibleLoadMore={isVizibleLoadMore} />}
+    </div>
+  );
+
+}
+
+export default App;

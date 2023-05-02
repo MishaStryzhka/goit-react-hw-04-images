@@ -1,8 +1,8 @@
 import { ImageGalleryItem } from "components/ImageGalleryItem/ImageGalleryItem"
 import css from "./ImageGallery.module.css"
+import PropTypes from 'prop-types';
 
 export const ImageGallery = ({ data }) => {
-    // console.log(data.hits)
     return (
         <ul className={css.ImageGallery}>
             {data.map(data =>
@@ -10,4 +10,8 @@ export const ImageGallery = ({ data }) => {
             )}
         </ul>
     )
+}
+
+ImageGallery.propTypes = {
+    data: PropTypes.array,
 }
